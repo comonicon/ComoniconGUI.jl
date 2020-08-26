@@ -1,5 +1,4 @@
-using Poptart.Desktop
-using ExprTools
+# This file serves as the main source code for now
 
 macro main(ex)
     funcdef = splitdef(ex)
@@ -14,7 +13,7 @@ macro main(ex)
     genkwargs, kwargs_inputs = gen_inputs(kwargs...)
 
     quote
-        $ex
+        Base.@__doc__ $ex
 
         window = Window()
         app = Application(windows = [window])
@@ -105,9 +104,4 @@ function funcall(fun, args, kwargs)
         end
     end
     rtn
-end
-
-@main function mainfun(a, b=1, c::Int=3; d, e=9, f::Int)
-    println("running!")
-    @info "Got args" a=a b=b c=c d=d e=e f=f
 end

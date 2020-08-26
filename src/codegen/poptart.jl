@@ -1,5 +1,3 @@
-
-
 export @main
 
 """
@@ -7,13 +5,9 @@ export @main
 
 Poptart code generation context.
 """
-mutable struct PoptartCtx
-    ptr::Int
-    help::Symbol
-    version::Symbol
-end
+struct PoptartCtx
 
-PoptartCtx() = PoptartCtx(1, gensym(:help), gensym(:version))
+end
 
 """
     codegen(cmd)
@@ -24,8 +18,6 @@ all the generated AST in a function `command_main`.
 function Comonicon.codegen(cmd::AbstractCommand)
     defs = Dict{Symbol,Any}()
     defs[:name] = :command_main
-    defs[:args] = [Expr(:kw, :(ARGS::Vector{String}), :ARGS)]
-
     ctx = PoptartCtx()
     defs[:body] = quote
         # let Julia throw InterruptException on SIGINT
