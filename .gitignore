@@ -1,5 +1,9 @@
 /Manifest.toml
 
-**/.comonicon.cmd/**
+**/.*.cmd/**
+**/.*.poptart/**
+
 
 imgui.ini
+
+.vscode/settings.json

@@ -6,4 +6,4 @@ Provides GUI support for Comonicon
 
 Expected to have identical api with Comonicon
 
-Now only a [prototype](./prototype.jl) works yet buggy.
+See [examples](./example) for details

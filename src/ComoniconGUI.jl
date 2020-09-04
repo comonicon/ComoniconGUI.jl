@@ -1,9 +1,11 @@
 module ComoniconGUI
-import Base
-using Poptart.Desktop
-using ExprTools
 
+include("codegen/codegen.jl")
+using .CodeGen
 
-include("prototype.jl")
+include("parse/parse.jl")
+using .Parse
+
+export @main, @cast
 
 end
