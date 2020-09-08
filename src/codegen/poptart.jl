@@ -40,7 +40,6 @@ Generate Julia AST from given command object `cmd`. This will wrap
 all the generated AST in a function `command_main`.
 """
 function codegen(cmd::AbstractCommand)
-    println("generation")
     defs = Dict{Symbol,Any}()
     defs[:name] = :poptart_main
     defs[:args] = []
