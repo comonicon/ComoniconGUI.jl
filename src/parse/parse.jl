@@ -1,3 +1,6 @@
+# Note:
+# This module is meant to be removed from ComoniconGUI when Comonicon itself is ready.
+
 module Parse
 
 using ExprTools

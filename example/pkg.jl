@@ -1,3 +1,5 @@
+# Adapted from https://github.com/Roger-luo/Comonicon.jl/blob/master/example/pkg.jl
+
 using ComoniconGUI
 
 # pkg activate <string> --shared=false
