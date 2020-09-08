@@ -11,6 +11,8 @@ Poptart = "197b51f5-fdb5-5f35-aa9f-0a14f35f5b28"
 
 [compat]
 julia = "1"
+Comonicon = "0.6.4"
+Poptart = "0.3.1"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
