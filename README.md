@@ -2,7 +2,7 @@
 
 This package is in early development
 
-Provides GUI support for Comonicon
+Provides GUI support for [Comonicon](https://github.com/Roger-luo/Comonicon.jl)
 
 Expected to have identical api with Comonicon
 
