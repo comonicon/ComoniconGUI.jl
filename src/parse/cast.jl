@@ -175,7 +175,6 @@ function create_entry(m::Module, line::QuoteNode, kwargs...)
 end
 
 function precompile_or_exec(m::Module, entry)
-    @info "From GUI"
     if m == Main && CACHE_FLAG[]
         return quote
             $create_cache($entry)

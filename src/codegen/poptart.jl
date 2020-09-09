@@ -7,6 +7,7 @@ mutable struct PoptartCtx
     arg_inputs::OrderedDict{Arg, Symbol}
     option_inputs::Dict{Option, Symbol}
     flag_inputs::Dict{Flag, Symbol}
+    leaf_windows::Dict{LeafCommand, Symbol}
     app::Symbol
     warning::Symbol
     help::Symbol
@@ -16,6 +17,7 @@ end
 PoptartCtx() = PoptartCtx(OrderedDict{Arg, Symbol}(), 
                           Dict{Option, Symbol}(),
                           Dict{Flag, Symbol}(),
+                          Dict{LeafCommand, Symbol}(),
                           gensym(:app), 
                           gensym(:warning), 
                           gensym(:help), 
@@ -69,17 +71,23 @@ function codegen(ctx::PoptartCtx, cmd::EntryCommand)
     end
 end
 
-function xapp_window(ctx::PoptartCtx, window_index::Int=1)
-    :($(ctx.app).windows[$window_index])
+function xapp_window(ctx::PoptartCtx, cmd::LeafCommand)
+    ctx.leaf_windows[cmd]
 end
 
-function codegen_body(ctx::PoptartCtx, cmd::LeafCommand; window_index::Int=1)
+function window_add_item(ctx::PoptartCtx, cmd::LeafCommand, items...)
+    ret = :(push!($(xapp_window(ctx, cmd)).items))
+    append!(ret.args, items)
+    ret
+end
+
+function codegen_body(ctx::PoptartCtx, cmd::LeafCommand)
     ret = Expr(:block)
     
-    push!(ret.args, codegen_window(ctx, cmd), codegen_description(ctx, cmd; window_index=window_index))
+    push!(ret.args, codegen_window(ctx, cmd), codegen_description(ctx, cmd))
 
     for args in (cmd.args, cmd.options, cmd.flags)
-        expr = codegen_controls(ctx, args; window_index=window_index)
+        expr = codegen_controls(ctx, args; cmd=cmd)
         push!(ret.args, expr)
     end
 
@@ -93,7 +101,7 @@ function codegen_body(ctx::PoptartCtx, cmd::LeafCommand; window_index::Int=1)
         $button_run = Poptart.Desktop.Button(title = "run")
         $button_cancel = Poptart.Desktop.Button(title = "cancel")
         $(ctx.warning) = Poptart.Desktop.Label("")
-        push!($(xapp_window(ctx, window_index)).items, $button_run, Poptart.Desktop.SameLine(), $button_cancel, $(ctx.warning))
+        $(window_add_item(ctx, cmd, button_run, :(Poptart.Desktop.SameLine()), button_cancel, ctx.warning))
 
         Poptart.Desktop.didClick($button_run) do event
             $(ctx.warning).text = ""
@@ -119,7 +127,7 @@ function codegen_body(ctx::PoptartCtx, cmd::NodeCommand)
     ret = Expr(:block)
 
     for (i, subcmd) in enumerate(cmd.subcmds)
-        push!(ret.args, codegen_body(ctx, subcmd; window_index=i))
+        push!(ret.args, codegen_body(ctx, subcmd))
         empty_inputs!(ctx)
     end
 
@@ -133,13 +141,16 @@ function codegen_app(ctx::PoptartCtx)
 end
 
 function codegen_window(ctx::PoptartCtx, cmd::LeafCommand)
+    cmd_window = gensym(:window)
+    ctx.leaf_windows[cmd] = cmd_window
     quote
-        push!($(ctx.app).windows, Poptart.Desktop.Window(title=$(cmd.name)))
+        $cmd_window = Poptart.Desktop.Window(title=$(cmd.name))
+        push!($(ctx.app).windows, $cmd_window)
     end
 end
 
-function codegen_description(ctx::PoptartCtx, cmd::LeafCommand; window_index::Int=1)
-    :(push!($(xapp_window(ctx, window_index)).items, Poptart.Desktop.Label($(cmd.doc.first)), Poptart.Desktop.Separator()))
+function codegen_description(ctx::PoptartCtx, cmd::LeafCommand)
+    window_add_item(ctx, cmd, :(Poptart.Desktop.Label($(cmd.doc.first))), :(Poptart.Desktop.Separator()))
 end
 
 function codegen_params(ctx::PoptartCtx, params::Symbol, kwparams::Symbol, cmd::LeafCommand)
@@ -280,6 +291,14 @@ function process_default(value::Expr)
     (buf="", tip="\nDefault value is $value")
 end
 
+function process_default(value::String)
+    (buf="", tip="\nDefault value is $value")
+end
+
+function process_default(value)
+    process_default(string(value))
+end
+
 function process_label(opt::Option)
     process_label(opt.arg, opt.doc)
 end
@@ -316,12 +335,12 @@ end
 """
     Generate inputs for `args`
 """
-function codegen_controls(ctx::PoptartCtx, args; window_index::Int=1)
+function codegen_controls(ctx::PoptartCtx, args; cmd::LeafCommand)
     genexpr = Expr(:block)
     group = gensym(:group)
     push!(genexpr.args, quote
         $group = Poptart.Desktop.Group(items=[Poptart.Desktop.NewLine()])
-        push!($(xapp_window(ctx, window_index)).items, $group)
+        $(window_add_item(ctx, cmd, group))
     end
     )
     for arg in args
