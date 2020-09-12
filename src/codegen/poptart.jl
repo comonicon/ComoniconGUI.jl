@@ -65,18 +65,25 @@ end
 
 function codegen(ctx::PoptartCtx, cmd::EntryCommand)
     quote
-        $(codegen_app(ctx))
+        $(codegen_app(ctx, cmd_name(cmd)))
         $(codegen_body(ctx, cmd.root))
         return $(ctx.app)
     end
 end
 
-function xapp_window(ctx::PoptartCtx, cmd::LeafCommand)
+"""
+Get thw window symbol corresponding to the cmd
+"""
+function xcmd_window(ctx::PoptartCtx, cmd::LeafCommand)
     ctx.leaf_windows[cmd]
 end
 
-function window_add_item(ctx::PoptartCtx, cmd::LeafCommand, items...)
-    ret = :(push!($(xapp_window(ctx, cmd)).items))
+function xwindow_add_item(ctx::PoptartCtx, cmd::LeafCommand, items...)
+    xwindow_add_item(xcmd_window(ctx, cmd), items...)
+end
+
+function xwindow_add_item(window::Symbol, items...)
+    ret = :(push!($window.items))
     append!(ret.args, items)
     ret
 end
@@ -101,7 +108,7 @@ function codegen_body(ctx::PoptartCtx, cmd::LeafCommand)
         $button_run = Poptart.Desktop.Button(title = "run")
         $button_cancel = Poptart.Desktop.Button(title = "cancel")
         $(ctx.warning) = Poptart.Desktop.Label("")
-        $(window_add_item(ctx, cmd, button_run, :(Poptart.Desktop.SameLine()), button_cancel, ctx.warning))
+        $(xwindow_add_item(ctx, cmd, button_run, :(Poptart.Desktop.SameLine()), button_cancel, ctx.warning))
 
         Poptart.Desktop.didClick($button_run) do event
             $(ctx.warning).text = ""
@@ -131,12 +138,61 @@ function codegen_body(ctx::PoptartCtx, cmd::NodeCommand)
         empty_inputs!(ctx)
     end
 
+    push!(ret.args, codegen_entrywindow(ctx, cmd))
+
     ret
 end
 
-function codegen_app(ctx::PoptartCtx)
+function codegen_entrywindow(ctx::PoptartCtx, cmd::NodeCommand)
+    ret = Expr(:block)
+
+    buttons = Symbol[]
+    for (sub_cmd, window) in ctx.leaf_windows
+        btn = gensym(:button)
+        push!(ret.args, xwindow_button(btn, cmd_name(sub_cmd), window))
+        push!(buttons, btn)
+    end
+
+    entry_window = gensym(:entrywindow)
+    push!(ret.args, xwindow(entry_window, buttons, cmd_name(cmd)))
+    push!(ret.args, :(push!($(ctx.app).windows, $entry_window)))
+    ret
+end
+
+function xwindow(window::Symbol, items::AbstractVector{<:Union{Expr, Symbol}}, title::AbstractString="Comonicon")
+    items_vec = Expr(:vect, items...)
+    :($window = Poptart.Desktop.Window(items=$items_vec, title=$title))
+end
+
+
+"""
+Generate a button that opens a window
+"""
+function xwindow_button(btn::Symbol, window_name::AbstractString, window::Symbol)
+    openwindow = :(open($window))
+    xbutton(btn, window_name, openwindow)
+end
+
+
+"""
+Expression to define a `Poptart.Desktop.Button`
+"""
+function xbutton(btn::Symbol, title::AbstractString)
+    :($btn = Poptart.Desktop.Button(title=$title))
+end
+
+function xbutton(btn::Symbol, title::AbstractString, click_event)
     quote
-        $(ctx.app) = Poptart.Desktop.Application(windows=[])
+        $btn = Poptart.Desktop.Button(title=$title)
+        Poptart.Desktop.didClick($btn) do event
+            $click_event
+        end
+    end
+end
+
+function codegen_app(ctx::PoptartCtx, appname::AbstractString="Comonicon")
+    quote
+        $(ctx.app) = Poptart.Desktop.Application(title=$appname, windows=[])
     end
 end
 
@@ -150,7 +206,7 @@ function codegen_window(ctx::PoptartCtx, cmd::LeafCommand)
 end
 
 function codegen_description(ctx::PoptartCtx, cmd::LeafCommand)
-    window_add_item(ctx, cmd, :(Poptart.Desktop.Label($(cmd.doc.first))), :(Poptart.Desktop.Separator()))
+    xwindow_add_item(ctx, cmd, :(Poptart.Desktop.Label($(cmd.doc.first))), :(Poptart.Desktop.Separator()))
 end
 
 function codegen_params(ctx::PoptartCtx, params::Symbol, kwparams::Symbol, cmd::LeafCommand)
@@ -340,7 +396,7 @@ function codegen_controls(ctx::PoptartCtx, args; cmd::LeafCommand)
     group = gensym(:group)
     push!(genexpr.args, quote
         $group = Poptart.Desktop.Group(items=[Poptart.Desktop.NewLine()])
-        $(window_add_item(ctx, cmd, group))
+        $(xwindow_add_item(ctx, cmd, group))
     end
     )
     for arg in args

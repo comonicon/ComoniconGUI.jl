@@ -187,6 +187,8 @@ function precompile_or_exec(m::Module, entry)
         end
     else
         quote
+            $create_cache($entry)
+
             $(create_casted_commands(m))
             $(xcall(set_cmd!, casted_commands(m), entry, "main"))
             $(xcall(m, :eval, xcall(CodeGen, :codegen, entry)))
