@@ -55,7 +55,8 @@ function codegen(cmd::AbstractCommand)
 
     return quote
         import Poptart
-
+        $(poptart_compat())
+        
         $(combinedef(defs))
         $ret_app = poptart_main()
 
@@ -439,6 +440,34 @@ end
 Generate a button that opens a window
 """
 function XWindowButton(btn::Symbol, window_name::AbstractString, window::Symbol)
-    openwindow = :(open($window))
+    openwindow = :(open_window($window))
     XButton(btn, openwindow; title=window_name)
+end
+
+"""
+temporary
+
+Will be removed once poptart is updated
+"""
+function poptart_compat()
+    quote
+        function open_window(window::Poptart.Desktop.Window)
+            window_isopen(window) && return
+
+            if !window.props[:show_window_closing_widget]
+                window.props[:isopen] = C_NULL
+            else
+                window.props[:isopen] = Ref(true)
+            end
+            return
+        end
+
+        function window_isopen(window::Poptart.Desktop.Window)
+            isopen_prop = window.props[:isopen]
+            window_isopen(isopen_prop)
+        end
+
+        window_isopen(::Ptr{Nothing}) = true
+        window_isopen(x::Ref{Bool}) = x[]
+    end
 end
