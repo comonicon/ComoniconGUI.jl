@@ -41,14 +41,13 @@ end
 Generate Julia AST from given command object `cmd`. This will wrap
 all the generated AST in a function `command_main`.
 """
-function codegen(cmd::AbstractCommand)
+function codegen(ctx::PoptartCtx, cmd::AbstractCommand)
     defs = Dict{Symbol,Any}()
     defs[:name] = :poptart_main
     defs[:args] = []
 
-    ctx = PoptartCtx()
     defs[:body] = quote
-        $(codegen(ctx, cmd))
+        $(codegen_entry(ctx, cmd))
     end
 
     ret_app = gensym(:app)
@@ -64,7 +63,7 @@ function codegen(cmd::AbstractCommand)
     end
 end
 
-function codegen(ctx::PoptartCtx, cmd::EntryCommand)
+function codegen_entry(ctx::PoptartCtx, cmd::EntryCommand)
     quote
         $(codegen_app(ctx, cmd_name(cmd)))
         $(codegen_body(ctx, cmd.root))

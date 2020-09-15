@@ -10,6 +10,7 @@ using Comonicon.Types
 using Comonicon.Types: CommandDoc
 using Comonicon.CodeGen
 using Comonicon.CodeGen: hasparameters
+import Comonicon.CodeGen: codegen 
 
 include("poptart/expr.jl")
 using .PoptartExpr
