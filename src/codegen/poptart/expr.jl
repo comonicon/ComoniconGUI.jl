@@ -1,15 +1,15 @@
 """ 
-    PoptartGen
+    PoptartExpr
 
 Generate Poptart controls.
 
 API is kept consistent with `Poptart.Desktop`
 """
-module PoptartGen
+module PoptartExpr
 
 using Poptart.Desktop
 
-export xpoptart_desktop, xpush_item
+export xpoptart_desktop, xpush_item, xexit
 
 """
 `xcall` but support `Type` as function.
@@ -40,7 +40,7 @@ function xpoptart_desktop(control, xs...; kwargs...)
     xcall_poptart(Desktop, control, xs...; kwargs...)
 end
 
-const CONTROLS = (:Button, :InputText, :Window, :Checkbox, :Popup, :SameLine, :Label, :Slider, :Canvas, :Spacing, :Group, :Separator)
+const CONTROLS = (:Application, :Button, :InputText, :Window, :Checkbox, :Popup, :SameLine, :NewLine, :Label, :Slider, :Canvas, :Spacing, :Group, :Separator)
 
 for control in CONTROLS
     funname = Symbol(:X, control)
@@ -75,5 +75,13 @@ function xpush_item(control_var::Symbol, items...)
     append!(ret.args, items)
     ret
 end
+
+function xexit(app::Symbol; esc=true)
+    quote
+        Poptart.Desktop.exit_on_esc() = $esc
+        Base.JLOptions().isinteractive==0 && wait($app.closenotify)
+    end
+end
+
 
 end
