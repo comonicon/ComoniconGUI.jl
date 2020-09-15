@@ -71,23 +71,6 @@ function codegen(ctx::PoptartCtx, cmd::EntryCommand)
     end
 end
 
-"""
-Get thw window symbol corresponding to the cmd
-"""
-function xcmd_window(ctx::PoptartCtx, cmd::LeafCommand)
-    ctx.leaf_windows[cmd]
-end
-
-function xwindow_add_item(ctx::PoptartCtx, cmd::LeafCommand, items...)
-    xwindow_add_item(xcmd_window(ctx, cmd), items...)
-end
-
-function xwindow_add_item(window::Symbol, items...)
-    ret = :(push!($window.items))
-    append!(ret.args, items)
-    ret
-end
-
 function codegen_body(ctx::PoptartCtx, cmd::LeafCommand)
     ret = Expr(:block)
     
@@ -149,46 +132,16 @@ function codegen_entrywindow(ctx::PoptartCtx, cmd::NodeCommand)
     buttons = Symbol[]
     for (sub_cmd, window) in ctx.leaf_windows
         btn = gensym(:button)
-        push!(ret.args, xwindow_button(btn, cmd_name(sub_cmd), window))
+        push!(ret.args, XWindowButton(btn, cmd_name(sub_cmd), window))
         push!(buttons, btn)
     end
 
     entry_window = gensym(:entrywindow)
-    push!(ret.args, xwindow(entry_window, buttons, cmd_name(cmd)))
+    push!(ret.args, XWindow(entry_window, items=buttons, title=cmd_name(cmd)))
     push!(ret.args, :(push!($(ctx.app).windows, $entry_window)))
     ret
 end
 
-function xwindow(window::Symbol, items::AbstractVector{<:Union{Expr, Symbol}}, title::AbstractString="Comonicon")
-    items_vec = Expr(:vect, items...)
-    :($window = Poptart.Desktop.Window(items=$items_vec, title=$title))
-end
-
-
-"""
-Generate a button that opens a window
-"""
-function xwindow_button(btn::Symbol, window_name::AbstractString, window::Symbol)
-    openwindow = :(open($window))
-    xbutton(btn, window_name, openwindow)
-end
-
-
-"""
-Expression to define a `Poptart.Desktop.Button`
-"""
-function xbutton(btn::Symbol, title::AbstractString)
-    :($btn = Poptart.Desktop.Button(title=$title))
-end
-
-function xbutton(btn::Symbol, title::AbstractString, click_event)
-    quote
-        $btn = Poptart.Desktop.Button(title=$title)
-        Poptart.Desktop.didClick($btn) do event
-            $click_event
-        end
-    end
-end
 
 function codegen_app(ctx::PoptartCtx, appname::AbstractString="Comonicon")
     quote
@@ -473,3 +426,45 @@ function codegen_control(::PoptartCtx, input::Symbol, value::Bool; name::Abstrac
         push!($group.items, $input)
     end
 end
+
+# Window
+
+# function xwindow(window::Symbol, items::AbstractVector{<:Union{Expr, Symbol}}, title::AbstractString="Comonicon")
+#     items_vec = Expr(:vect, items...)
+#     :($window = Poptart.Desktop.Window(items=$items_vec, title=$title))
+# end
+
+"""
+Get thw window symbol corresponding to the cmd
+"""
+function xcmd_window(ctx::PoptartCtx, cmd::LeafCommand)
+    ctx.leaf_windows[cmd]
+end
+
+function xwindow_add_item(ctx::PoptartCtx, cmd::LeafCommand, items...)
+    xpush_item(xcmd_window(ctx, cmd), items...)
+end
+
+# function xwindow_add_item(window::Symbol, items...)
+#     ret = :(push!($window.items))
+#     append!(ret.args, items)
+#     ret
+# end
+
+# Button
+
+"""
+Generate a button that opens a window
+"""
+function XWindowButton(btn::Symbol, window_name::AbstractString, window::Symbol)
+    openwindow = :(open($window))
+    XButton(btn, openwindow; title=window_name)
+end
+
+# """
+# Expression to define a `Poptart.Desktop.Button`
+# """
+# function xbutton(btn::Symbol, title::AbstractString)
+#     :($btn = Poptart.Desktop.Button(title=$title))
+# end
+

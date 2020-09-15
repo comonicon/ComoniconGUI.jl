@@ -11,7 +11,9 @@ using Comonicon.Types: CommandDoc
 using Comonicon.CodeGen
 using Comonicon.CodeGen: hasparameters
 
-include("poptart.jl")
+include("poptart/controls.jl")
+using .PoptartGen
+include("poptart/context.jl")
 
 export codegen, PoptartCtx
 
