@@ -1,7 +1,7 @@
 name = "ComoniconGUI"
 uuid = "04ab0f59-5120-4bbe-b8b6-b34cf3f2b56a"
 authors = ["St Z <abczst@outlook.com> and contributors"]
-version = "0.1.2"
+version = "0.1.0"
 
 [deps]
 Comonicon = "863f3e99-da2a-4334-8734-de3dacbe5542"
